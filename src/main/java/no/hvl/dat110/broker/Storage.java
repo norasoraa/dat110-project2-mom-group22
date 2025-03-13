@@ -26,9 +26,7 @@ public class Storage {
 	}
 
 	public Set<String> getTopics() {
-
 		return subscriptions.keySet();
-
 	}
 
 	// get the session object for a given user
@@ -56,14 +54,16 @@ public class Storage {
 	public void removeClientSession(String user) {
 
 		ClientSession clientSession = getSession(user);
-		clientSession.disconnect();
-		clients.remove(user, clientSession);
+		if (clientSession != null) {
+			clientSession.disconnect();
+			clients.remove(user);
+		}
 
 	}
 
 	public void createTopic(String topic) {
 
-		subscriptions.put(topic, ConcurrentHashMap.newKeySet());
+		subscriptions.putIfAbsent(topic, ConcurrentHashMap.newKeySet());
 
 	}
 
@@ -75,17 +75,19 @@ public class Storage {
 
 	public void addSubscriber(String user, String topic) {
 
-		Set<String> newSubscriberSet = getSubscribers(topic);
-		newSubscriberSet.add(user);
-		subscriptions.replace(topic, newSubscriberSet);
+		subscriptions.computeIfAbsent(topic, k -> ConcurrentHashMap.newKeySet()).add(user);
 
 	}
 
 	public void removeSubscriber(String user, String topic) {
 
 		Set<String> subscribers = getSubscribers(topic);
-		subscribers.remove(user);
-		subscriptions.replace(topic, subscribers);
+		if (subscribers != null) {
+			subscribers.remove(user);
+			if (subscribers.isEmpty()) {
+				subscriptions.remove(topic);
+			}
+		}
 
 	}
 
